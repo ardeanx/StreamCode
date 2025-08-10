@@ -1,0 +1,40 @@
+# Kosongkan ffmpeg_bin agar auto-detect "ffmpeg" dari PATH.
+# Atau isi path absolut: "C:/ffmpeg/bin/ffmpeg.exe"
+ffmpeg_bin: "C:/ffmpeg/ffmpeg.exe"
+
+name: "default_cpu_h264_hevc"
+
+video:
+  codecs:
+    - { id: "h264", encoder_cpu: "libx264", encoder_gpu: "h264_nvenc", profile: "high" }
+    - { id: "hevc", encoder_cpu: "libx265", encoder_gpu: "hevc_nvenc", profile: "main" }
+  gop_seconds: 2
+  segment_seconds: 4
+  framerate: 30
+
+audio:
+  codec: "aac"
+  bitrate_k: 128
+  channels: 2
+  samplerate: 48000
+
+# 2160/1440/1080/720/480 sesuai konfirmasi
+ladders:
+  - { name: "2160", width: 3840, height: 2160, bitrate_k: 14000, maxrate_k: 16000, bufsize_k: 32000 }
+  - { name: "1440", width: 2560, height: 1440, bitrate_k: 8000,  maxrate_k: 9000,  bufsize_k: 18000 }
+  - { name: "1080", width: 1920, height: 1080, bitrate_k: 5800,  maxrate_k: 6500,  bufsize_k: 12000 }
+  - { name: "720",  width: 1280, height: 720,  bitrate_k: 3000,  maxrate_k: 3500,  bufsize_k: 7000  }
+  - { name: "480",  width: 854,  height: 480,  bitrate_k: 1400,  maxrate_k: 1700,  bufsize_k: 3500  }
+
+output:
+  structure: "{basename}/{rendition}/"
+  master_hls: "{basename}.m3u8"
+  dash_mpd: "{basename}.mpd"
+
+features:
+  hls: true
+  dash: true
+  thumbnails: true
+  preview_clip_seconds: 6
+  srt_to_webvtt: true
+  hls_aes128: true   # AES-128, key lokal

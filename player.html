@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>StreamCode Player</title>
+<link rel="icon" href="assets/app.ico">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/plyr@3/dist/plyr.css"/>
+<style>
+  :root { color-scheme: dark light; }
+  body{margin:0;background:#0e0f13;color:#e6e6e6;font:14px system-ui,Segoe UI,Roboto}
+  .wrap{max-width:980px;margin:24px auto;padding:0 12px}
+  h1{font-size:16px;margin:6px 0 12px;color:#9aa3b2;font-weight:600}
+  .plyr__menu__container .plyr__control{font-size:14px}
+  video{width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="title">Preview</h1>
+  <video id="video" playsinline controls></video>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<script src="https://cdn.jsdelivr.net/npm/dashjs@4/dist/dash.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/plyr@3/dist/plyr.polyfilled.min.js"></script>
+<script>
+(function(){
+  const qp = new URLSearchParams(location.search);
+  const hlsSrc   = qp.get('hls');   // ex: /out/MyVideo/HLS/MyVideo.m3u8
+  const dashSrc  = qp.get('dash');  // ex: /out/MyVideo/DASH/MyVideo.mpd
+  const vttSrc   = qp.get('vtt');   // optional: /out/MyVideo/subs.vtt
+  const thumbs   = qp.get('thumbs'); // optional: /out/MyVideo/thumbs.vtt
+  const poster   = qp.get('poster'); // optional
+  const title    = qp.get('title') || (hlsSrc||dashSrc || 'Preview');
+  document.getElementById('title').textContent = title;
+
+  const video = document.getElementById('video');
+  if (poster) video.setAttribute('poster', poster);
+
+  // Inject track subtitle jika ada
+  if (vttSrc){
+    const tr = document.createElement('track');
+    tr.kind='subtitles'; tr.label='Subtitles'; tr.srclang='und';
+    tr.src = vttSrc; tr.default = true;
+    video.appendChild(tr);
+  }
+
+  // Helper init Plyr dengan opsi kualitas dinamis
+  function initPlyr(qualityOptions, onChangeQuality){
+    const opts = {
+      captions: { active: !!vttSrc, update: true },
+      controls: ['play-large','play','progress','current-time','duration','mute','volume','captions','settings','pip','airplay','fullscreen'],
+      settings: ['captions','quality','speed'],
+      speed: { selected: 1, options: [0.5, 1, 1.25, 1.5, 2] },
+      quality: qualityOptions ? {
+        default: qualityOptions[0],
+        options: qualityOptions,
+        forced: true,
+        onChange: onChangeQuality
+      } : undefined,
+      previewThumbnails: thumbs ? { src: thumbs } : undefined
+    };
+    return new Plyr(video, opts);
+  }
+
+  // HLS flow
+  function bootHLS(){
+    if (Hls.isSupported()){
+      const hls = new Hls({
+        enableWorker: true,
+        fragLoadingTimeOut: 20000,
+        manifestLoadingTimeOut: 20000,
+      });
+      hls.loadSource(hlsSrc);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, function(_e, data){
+        // Ambil daftar resolusi unik (desc)
+        const levels = data.levels || [];
+        const heights = Array.from(new Set(levels.map(l => l.height))).sort((a,b)=>b-a);
+        const player = initPlyr(heights, q=>{
+          // set level berdasarkan height yang dipilih
+          const idx = levels.findIndex(l => l.height === q);
+          hls.currentLevel = idx;
+        });
+        // default ke level tertinggi
+        hls.currentLevel = -1; // auto best
+        window._player = player;
+      });
+      hls.on(Hls.Events.ERROR, function(evt, data){
+        console.warn('[HLS]', data);
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = hlsSrc;
+      const player = initPlyr(null, null);
+      window._player = player;
+    } else {
+      document.body.insertAdjacentHTML('beforeend','<div style="padding:12px;color:#ff6b6b">Browser tidak mendukung HLS.</div>');
+    }
+  }
+
+  // DASH flow
+  function bootDASH(){
+    const dash = dashjs.MediaPlayer().create();
+    dash.updateSettings({
+      streaming: {
+        abr: { autoSwitchBitrate: { video: false } },
+        fastSwitchEnabled: true
+      }
+    });
+    dash.initialize(video, dashSrc, true);
+    dash.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, function(){
+      try{
+        const infos = dash.getBitrateInfoListFor('video') || [];
+        const heights = Array.from(new Set(infos.map(i => i.height))).filter(Boolean).sort((a,b)=>b-a);
+        const player = initPlyr(heights, q=>{
+          const idx = infos.findIndex(i => i.height === q);
+          if (idx >= 0) dash.setQualityFor('video', idx);
+        });
+        window._player = player;
+      }catch(e){
+        console.warn(e);
+        const player = initPlyr(null, null);
+        window._player = player;
+      }
+    });
+    dash.on(dashjs.MediaPlayer.events.ERROR, function(e){ console.warn('[DASH]', e); });
+  }
+
+  if (hlsSrc) bootHLS();
+  else if (dashSrc) bootDASH();
+  else {
+    document.body.insertAdjacentHTML('beforeend','<div style="padding:12px;color:#ff6b6b">Tidak ada sumber video. Sertakan ?hls=... atau ?dash=...</div>');
+  }
+})();
+</script>
+</body>
+</html>
