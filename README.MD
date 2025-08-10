@@ -1,6 +1,8 @@
 # StreamCode
 
-StreamCode adalah Encoder & Transcoder **ABR (Adaptive Bitrate)** untuk **HLS** dan **MPEG-DASH** dengan GUI modern (PySide6), preview web (Plyr + hls.js + dash.js), watcher folder otomatis, riwayat job, subtitle SRT/VTT, poster, sprite thumbnails, serta opsi enkripsi **AES-128 HLS**. Target utama Windows.
+StreamCode adalah Encoder & Transcoder untuk **HLS** dan **MPEG-DASH** dengan GUI modern (PySide6), preview web (Plyr + hls.js + dash.js), watcher folder otomatis, riwayat job, subtitle SRT/VTT, poster, sprite thumbnails, serta opsi enkripsi **AES-128 HLS**. Target utama Windows.
+
+> Tujuan StreamCode adalah agar proses Encoding & Transcoding menjadi lebih muda dan cepat via lokal yang akan di upload ke Storage.
 
 ## Daftar Isi
 
@@ -29,9 +31,7 @@ StreamCode adalah Encoder & Transcoder **ABR (Adaptive Bitrate)** untuk **HLS** 
   - [Build Distribusi (cx\_Freeze)](#build-distribusi-cx_freeze)
   - [Troubleshooting](#troubleshooting)
   - [Roadmap Pendek](#roadmap-pendek)
-  - [Lisensi](#lisensi)
   - [Kredit](#kredit)
-  - [Ringkas](#ringkas)
 
 ## Ringkasan
 
@@ -61,7 +61,7 @@ StreamCode mempermudah pembuatan paket **Adaptive Bitrate Streaming** yang siap 
 ## Arsitektur Singkat
 
 ```bash
-gui.py         → Aplikasi utama (PySide6)
+main.py         → Aplikasi utama (PySide6)
 encode.py      → Worker encoding (FFmpeg orchestration)
 server.py      → HTTP preview server (FastAPI/Uvicorn)
 utils/
@@ -94,10 +94,10 @@ StreamCode/
 │   └─ subtitles.py
 ├─ encode.py
 ├─ server.py
-├─ gui.py
+├─ main.py
 ├─ player.html
 ├─ requirements.txt
-└─ setup_cxfreeze.py          # build EXE portable
+└─ build.py                 # build EXE portable
 ```
 
 Output pengguna (default): `C:\Users\<Nama>\Documents\StreamCode\...`
@@ -126,7 +126,7 @@ Jika tidak ada, taruh `ffmpeg.exe` dan `ffprobe.exe` ke `C:\ffmpeg\`.
 
 ```powershell
 # terminal 1 (GUI)
-python gui.py
+python main.py
 ```
 
 GUI otomatis menyalakan preview server lokal. Bila perlu manual:
@@ -303,7 +303,7 @@ python .\setup_cxfreeze.py build
 ## Troubleshooting
 
 **Aplikasi muncul console saat encode**
-Pastikan patch “no console” di `gui.py` dan *monkey-patch* `subprocess` di `encode.py` aktif. Rebuild.
+Pastikan patch “no console” di `main.py` dan *monkey-patch* `subprocess` di `encode.py` aktif. Rebuild.
 
 **Port 8787 sudah dipakai / `WinError 10048`**
 Ubah port di GUI (otomatis memilih bebas), atau kill proses server sebelumnya.
@@ -329,22 +329,10 @@ Pastikan folder `PySide6/plugins` ikut terbawa. Script build sudah menyalin otom
 ## Roadmap Pendek
 
 - Preset ladder adaptif per konten
-- DRM tingkat lanjut (FairPlay/Widevine/CENC) — jika diperlukan
+- DRM tingkat lanjut (FairPlay/Widevine/CENC)
 - Template job/presets yang dapat disimpan
 - Ekspor laporan batch (CSV/JSON)
 - Headless CLI mode terpisah (tanpa GUI)
-
-## Lisensi
-
-Disarankan **MIT License**. Ubah sesuai kebutuhan organisasi.
-
-```bash
-MIT License
-
-Copyright (c) 2025 …
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-```
 
 ## Kredit
 
@@ -352,7 +340,3 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 - **PySide6** untuk GUI
 - **FastAPI/Uvicorn** untuk preview server
 - **Plyr**, **hls.js**, **dash.js** untuk pemutar web
-
-## Ringkas
-
-StreamCode memberikan workflow encoding ABR yang praktis: pilih folder output, tambahkan video, pilih codec/resolusi, centang HLS/DASH, klik **Mulai Proses**, lalu **Preview**. Watcher dan History melengkapi otomasi, sedangkan build portable memudahkan distribusi internal. Selesai.
