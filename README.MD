@@ -4,9 +4,19 @@ StreamCode adalah Encoder & Transcoder untuk **HLS** dan **MPEG-DASH** dengan GU
 
 > Tujuan StreamCode adalah agar proses Encoding & Transcoding menjadi lebih muda dan cepat via lokal yang akan di upload ke Storage.
 
+## Tampilan UI
+
+![Program](assets/app.png)
+
+### Struktur Build
+
+![Struktur](assets/struktur.png)
+
 ## Daftar Isi
 
 - [StreamCode](#streamcode)
+  - [Tampilan UI](#tampilan-ui)
+    - [Struktur Build](#struktur-build)
   - [Daftar Isi](#daftar-isi)
   - [Ringkasan](#ringkasan)
   - [Fitur Utama](#fitur-utama)
